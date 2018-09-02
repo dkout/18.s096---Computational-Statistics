@@ -1,0 +1,147 @@
+%\documentclass[11pt,letterpaper,oneside]{article}
+\documentclass{article}
+%%%% Conditional for including/excluding answers
+\newif\ifanswers
+\answerstrue %
+\answersfalse % comment out to hide answers
+
+\usepackage{Sweave}
+\usepackage{moreverb}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{alltt}
+\usepackage{moreverb}
+\usepackage{enumitem}
+\usepackage[latin1]{inputenc}
+\newcommand\bcdot{\ensuremath{%
+  \mathchoice%
+   {\mskip\thinmuskip\lower0.2ex\hbox{\scalebox{1.5}{$\cdot$}}\mskip\thinmuskip}}%
+   {\mskip\thinmuskip\lower0.2ex\hbox{\scalebox{1.5}{$\cdot$}}\mskip\thinmuskip}%        
+   {\lower0.3ex\hbox{\scalebox{1.2}{$\cdot$}}}%  
+   {\lower0.3ex\hbox{\scalebox{1.2}{$\cdot$}}}%
+}
+\title{Introduction to R\\Initial Analysis of Diabetes Data}
+\author{Peter Kempthorne  }
+\date{Spring 2018}
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+
+ Consider the diabetes data used by Efron, Hastie, Johnstone and Tibshirani (2004):\footnote{Least Angle Regression, {\it Annals of Statistics}, 2004, Vol 32, No. 2 407-499}
+ observations on 442 patients, with the response of interest being a quantitative measure of disease progression one year after baseline. 
+There are ten baseline variables---age, sex, body-mass index, average blood pressure, and six blood serum measurements. 
+
+
+In this note we use this data to illustrate the following basic R functions:
+
+\vspace*{.5in}
+
+\begin{tabular}{ll}
+R Function & Purpose/description\\ \hline
+$read.csv()$ & Read in data set from a csv file \\
+$dim()$ & Display dimensions of matrix/array/data frame \\
+$head()$ and $tail()$ & Display top and bottom rows of data\\
+$str()$ & Compact display an object's structure\\
+$apply()$ & Apply function fixing array margin/dimension\\
+$cbind()$ & Bind together column vectors into matrix\\
+$data.frame()$ & Create data frame from matrix objects\\
+$mean(), var()$ & Compute sample mean and sample variance\\
+$cor()$ & Compute correlation matrix \\
+$round(,digits=2)$ & Display values rounding to 2 decimal places\\
+$par(mfcol=c(2,3))$ & Create 2x3 panel for plots (column ordered)\\
+$plot()$ & Generic X-Y  plot \\
+$lm()$ & Fit linear model by least squares \\
+$summary()$ & Summary statistics for object (e.g., lm fit)\\
+\end{tabular}
+
+\newpage
+
+
+<<echo=TRUE,fig=FALSE>>=
+# 1.  Read data into R ----
+diabetes= read.csv(file="EfronData/diabetes.csv", sep=",", header=TRUE)
+#   Display attributes of data frame
+dim(diabetes)
+head(diabetes)
+tail(diabetes)
+#   Use str() to display structure
+str(diabetes)
+# 2. Compute summary statistics ----
+apply(diabetes,2,summary)
+cbind(mean=apply(diabetes,2,mean), 
+      sd=sqrt(apply(diabetes,2,var)))
+round(cor(diabetes),digits=2)
+@
+<<echo=TRUE,fig=TRUE>>=
+par(mfcol=c(3,2))
+names(diabetes)
+
+#   Plot prog versus age, bmi
+plot(prog ~ age, data=diabetes)
+plot(prog ~ sex, data=diabetes)
+plot(prog ~ bmi, data=diabetes)
+plot(prog ~ map, data=diabetes)
+plot(prog ~ tc, data=diabetes)
+plot(prog ~ ldl, data=diabetes)
+@
+<<echo=TRUE,fig=FALSE>>=
+# 3.  Fit linear regression model ----
+lmfit<-lm(prog ~ ., data=diabetes)
+summary(lmfit)
+@
+<<echo=TRUE,fig=TRUE>>=
+# plot prog versus fitted values
+# Refit model with helpful options in lm()
+lmfit<-lm(prog ~ ., data=diabetes,x=TRUE,y=TRUE)
+
+par(mfcol=c(1,1))
+plot(x=lmfit$fitted.values,y=lmfit$y,
+     xlab="Fitted Values", ylab="prog")
+cor(cbind(lmfit$fitted.values, lmfit$y))
+@
+
+<<echo=TRUE,fig=FALSE>>=
+# Rescale variables to have mean 0, sd 1
+diabetes0=diabetes
+names(diabetes0)
+diabetes0=apply(diabetes,2,scale)
+apply(diabetes0,2,summary)
+apply(diabetes0,2,mean)
+apply(diabetes0,2,var)
+
+# Coerce matrix diabetes0 to be a data frame
+# Replace the (scaled) prog variable with 
+#     the mean-adjusted original 
+diabetes0=data.frame(diabetes0)
+diabetes0$prog=diabetes$prog - mean(diabetes$prog)
+
+# Check that means are 0 and variances are apply(diabetes0,2,mean)
+apply(diabetes0,2,mean)
+apply(diabetes0,2,var)
+
+# 3.1 Refit linear model with scaled indep vars ----
+
+lmfit0=lm(prog~., data=diabetes0) 
+summary(lmfit0)
+
+#   Note what statistics are same:
+#       Residual standard error
+#       Multiple R-squared 
+#       t values and p-values of indep vars
+@
+<<echo=TRUE,fig=TRUE>>=
+# 4.  Display coefficients (estimates and confidence intervals) ----
+# Replace FALSE by TRUE if package coefplot needs to be installed
+if (FALSE){install.packages(coefplot)}
+library(coefplot)
+coefplot(lmfit0)
+@
+
+<<echo=TRUE,fig=TRUE>>=
+# Re-do coefplot ordered by magnitude of coefficient
+coefplot(lmfit0, sort='magnitude')
+
+@
+
+\end{document}

@@ -1,0 +1,11 @@
+From Efron and Hastie website (https://web.stanford.edu/~hastie/CASI/) for their book
+Computer Age Statistical Inference
+
+
+Prostate data of Section 3.3 and later
+
+prostmat.csv is the 6033x102 data matrix discussed at the top of page 33.
+The first 50 columns are the genetic activity measurements for the 50 control subjects,
+while the last 52 columns represent the prostate cancer subjects.
+The data can be read directly into R via the command
+prostmat <- read.csv("http://web.stanford.edu/~hastie/CASI_files/DATA/prostmat.csv")
